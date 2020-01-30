@@ -5,6 +5,9 @@ using System.Net.Sockets;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Mutate4l.Cli;
+using Mutate4l.Core;
+using Mutate4l.State;
+using Mutate4l.Utility;
 
 namespace Mutate4l.IO
 {
@@ -28,23 +31,31 @@ namespace Mutate4l.IO
             }
         }
 
-        public static async Task ProcessUdpDataAsync(UdpClient udpClient, ChannelWriter<byte[]> writer, Func<byte[], byte[]> processFunction)
+        public static async Task ProcessUdpDataAsync(UdpClient udpClient, ChannelWriter<InternalCommand> writer)
         {
             await foreach (byte[] values in ReceiveUdpDataAsync(udpClient).ConfigureAwait(false))
             {
                 // this should trigger some event that notifies the state of mutateful and possibly triggers a re-evaluation of any formulas (should take into account whether the received data is for a complete clip or just partial)
                 Console.WriteLine($"Received datagram of size {values.Length}");
-                var result = processFunction(values);
-                // var result = CliHandler.HandleData(values);
-                if (result.Length > 0)
-                    await writer.WriteAsync(result);
+                //var result = processFunction(values);
+                if (Decoder.IsTypedCommand(values))
+                {
+                    // new logic for handling input
+                }
+                else // old logic
+                {
+                    var result = CliHandler.HandleInput(values);
+                    if (result != ClipSlot.Empty)
+                        await writer.WriteAsync(new InternalCommand(InternalCommandType.SetClipSlot, result, new[] { result.Clip.ClipReference }));
+                }
             }
         }
 
-        public static async Task SendUdpDataAsync(UdpClient udpClient, ChannelReader<byte[]> reader)
+        public static async Task SendUdpDataAsync(UdpClient udpClient, ChannelReader<InternalCommand> reader)
         {
-            await foreach (var clipData in reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (var internalCommand in reader.ReadAllAsync().ConfigureAwait(false))
             {
+                var clipData = IOUtilities.GetClipAsBytes(internalCommand.ClipSlot.Id, internalCommand.ClipSlot.Clip).ToArray();
                 Console.WriteLine($"Received data to send, with length {clipData.Length}");
                 try
                 {
