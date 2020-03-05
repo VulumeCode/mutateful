@@ -18,7 +18,7 @@ namespace Mutate4l.Cli
             var generateUnitTest = false;
             var generateSvgDoc = false;
 
-            if (Decoder.IsString(inputData))
+            if (Decoder.IsStringData(inputData))
             {
                 string text = Decoder.GetText(inputData);
                 Console.WriteLine(text);

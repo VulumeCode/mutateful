@@ -33,18 +33,30 @@ namespace Mutate4l.IO
 
         public static async Task ProcessUdpDataAsync(UdpClient udpClient, ChannelWriter<InternalCommand> writer)
         {
-            await foreach (byte[] values in ReceiveUdpDataAsync(udpClient).ConfigureAwait(false))
+            await foreach (byte[] data in ReceiveUdpDataAsync(udpClient).ConfigureAwait(false))
             {
-                // this should trigger some event that notifies the state of mutateful and possibly triggers a re-evaluation of any formulas (should take into account whether the received data is for a complete clip or just partial)
-                Console.WriteLine($"Received datagram of size {values.Length}");
-                //var result = processFunction(values);
-                if (Decoder.IsTypedCommand(values))
+                if (Decoder.IsTypedCommand(data))
                 {
                     // new logic for handling input
+                    switch (Decoder.GetCommandType(data[3]))
+                    {
+                        case InternalCommandType.OutputString:
+                            string text = Decoder.GetText(data);
+                            Console.WriteLine(text);
+                            break;
+                        case InternalCommandType.SetClipSlot:
+                            break;
+                        case InternalCommandType.SetAndEvaluateClipSlot:
+                            break;
+                        case InternalCommandType.EvaluateClipSlots:
+                            break;
+                        case InternalCommandType.UnknownCommand:
+                            break;
+                    }
                 }
                 else // old logic
                 {
-                    var result = CliHandler.HandleInput(values);
+                    var result = CliHandler.HandleInput(data);
                     if (result != ClipSlot.Empty)
                         await writer.WriteAsync(new InternalCommand(InternalCommandType.SetClipSlot, result, new[] { result.Clip.ClipReference }));
                 }

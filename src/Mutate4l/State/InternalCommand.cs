@@ -4,13 +4,11 @@ namespace Mutate4l.State
 {
     public enum InternalCommandType
     {
+        UnknownCommand,
+        OutputString,
         SetClipSlot, // set a single clip slot without triggering evaluation
         SetAndEvaluateClipSlot, // set and trigger evaluation of a single clip slot
         EvaluateClipSlots, // trigger evaluation of one or more clipslots - arguments are a list of clipslot coordinates
-        // SetName,
-        // Delete,
-        // SetClipSlot
-        // UpdateFormula
     }
     
     public class InternalCommand

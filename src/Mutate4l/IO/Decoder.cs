@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Mutate4l.Core;
+using Mutate4l.State;
+using static Mutate4l.State.InternalCommandType;
 
 namespace Mutate4l.IO
 {
@@ -11,34 +13,32 @@ namespace Mutate4l.IO
         private const byte TypedDataFirstByte = 127;
         private const byte TypedDataSecondByte = 126;
         private const byte TypedDataThirdByte = 125;
-        private const byte StringData = 124;
-        private const byte SetAndEvaluateClipSlot = 255;
-        private const byte SetClipSlot = 254;
-        private const byte EvaluateClipSlots = 253;
 
-        public static bool IsString(byte[] result)
+        private const byte StringDataSignifier = 124;
+        private const byte SetAndEvaluateClipSlotSignifier = 255;
+        private const byte SetClipSlotSignifier = 254;
+        private const byte EvaluateClipSlotsSignifier = 253;
+
+        public static bool IsStringData(byte[] result)
         {
-            return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte && result[3] == StringData;
+            return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte && result[3] == StringDataSignifier;
         }
 
-        public static bool IsSetAndEvaluateClipSlotCommand(byte[] result)
-        {
-            return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte && result[3] == SetAndEvaluateClipSlot;
-        }
-
-        public static bool IsSetClipSlotCommand(byte[] result)
-        {
-            return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte && result[3] == SetClipSlot;
-        }
-
-        public static bool IsEvaluateClipSlotsCommand(byte[] result)
-        {
-            return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte && result[3] == EvaluateClipSlots;
-        }
-        
         public static bool IsTypedCommand(byte[] result)
         {
             return result.Length > 4 && result[0] == TypedDataFirstByte && result[1] == TypedDataSecondByte && result[2] == TypedDataThirdByte;
+        }
+
+        public static InternalCommandType GetCommandType(byte dataSignifier)
+        {
+            return dataSignifier switch
+            {
+                StringDataSignifier => OutputString,
+                SetAndEvaluateClipSlotSignifier => SetAndEvaluateClipSlot,
+                SetClipSlotSignifier => SetClipSlot,
+                EvaluateClipSlotsSignifier => EvaluateClipSlots,
+                _ => UnknownCommand
+            };
         }
         
         public static string GetText(byte[] data)
